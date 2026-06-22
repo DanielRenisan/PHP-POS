@@ -1,0 +1,12 @@
+/vendor
+/.idea
+.env
+composer.lock
+/build
+*-container*
+*.phpunit*
+test.php
+/.venv
+/docs/build
+/node_modules
+package*.json

@@ -1,0 +1,590 @@
+@extends('layouts.app_rest')
+@section('content')
+
+<style>
+    .title {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    /* CSS to style the modal */
+    .modal {
+        position: fixed;
+        z-index: 1;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.4);
+    }
+
+    .modal-content {
+        background-color: #fefefe;
+        margin: 15% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%;
+    }
+
+    .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+    }
+
+    .close:hover,
+    .close:focus {
+        color: black;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    #iconError.hidden {
+        display: none;
+    }
+
+    .heading {
+        background-color: #4361ee;
+        color: white;
+        overflow: hidden;
+        padding: 15px 20px;
+    }
+
+    .heading h2 {
+        font-size: 18px;
+        font-weight: bold;
+    }
+
+    .pagination {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        margin: 20px 100px 0 0;
+
+    }
+
+    .pagination button {
+        border: 1px solid lightblue;
+        padding: 3px 10px;
+        border-radius: 50%;
+    }
+
+    .pagination button:hover {
+        background-color: #4361ee;
+        border: 1px solid transparent;
+        color: white;
+    }
+
+    .pagination button.active {
+        background-color: #4361ee;
+        border: 1px solid transparent;
+        color: white;
+    }
+
+    .view-deatils h2 {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 60%;
+        margin: 0 auto;
+        font-size: 18px;
+        font-weight: 500;
+    }
+</style>
+
+
+{{-- body content start--------------------------------- --}}
+
+<div class="animate__animated p-6" :class="[$store.app.animation]">
+    <div x-data="payment_method_list">
+        <script src="assets/js/simple-datatables.js"></script>
+
+        <div class="panel border-[#e0e6ed] px-0 dark:border-[#1b2e4b]">
+            <div class="px-5" x:data="payment_method_list">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div class="mb-5 flex items-center gap-2">
+                        <button type="button" class="btn btn-danger gap-2" @click="deleteRow()">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                xmlns="http://www.w3.org/2000/svg" class="h-5 w-5">
+                                <path d="M20.5001 6H3.5" stroke="currentColor" stroke-width="1.5"
+                                    stroke-linecap="round"></path>
+                                <path
+                                    d="M18.8334 8.5L18.3735 15.3991C18.1965 18.054 18.108 19.3815 17.243 20.1907C16.378 21 15.0476 21 12.3868 21H11.6134C8.9526 21 7.6222 21 6.75719 20.1907C5.89218 19.3815 5.80368 18.054 5.62669 15.3991L5.16675 8.5"
+                                    stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+                                <path opacity="0.5" d="M9.5 11L10 16" stroke="currentColor" stroke-width="1.5"
+                                    stroke-linecap="round"></path>
+                                <path opacity="0.5" d="M14.5 11L14 16" stroke="currentColor" stroke-width="1.5"
+                                    stroke-linecap="round"></path>
+                                <path opacity="0.5"
+                                    d="M6.5 6C6.55588 6 6.58382 6 6.60915 5.99936C7.43259 5.97849 8.15902 5.45491 8.43922 4.68032C8.44784 4.65649 8.45667 4.62999 8.47434 4.57697L8.57143 4.28571C8.65431 4.03708 8.69575 3.91276 8.75071 3.8072C8.97001 3.38607 9.37574 3.09364 9.84461 3.01877C9.96213 3 10.0932 3 10.3553 3H13.6447C13.9068 3 14.0379 3 14.1554 3.01877C14.6243 3.09364 15.03 3.38607 15.2493 3.8072C15.3043 3.91276 15.3457 4.03708 15.4286 4.28571L15.5257 4.57697C15.5433 4.62992 15.5522 4.65651 15.5608 4.68032C15.841 5.45491 16.5674 5.97849 17.3909 5.99936C17.4162 6 17.4441 6 17.5 6"
+                                    stroke="currentColor" stroke-width="1.5"></path>
+                            </svg>
+                            Delete
+                        </button>
+                        <button class="btn btn-primary gap-2" @click="openModal = true">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                stroke-linejoin="round" class="h-5 w-5">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            Add New
+                        </button>
+                    </div>
+                    <input type="text" class="border rounded px-2 py-1 w-80" placeholder="Search..."
+                        style="outline: none;" x-model="searchText">
+                </div>
+
+                <div x-data="{ iconFile: null }" x-show="openModal" class="mb-5">
+                    <!-- modal -->
+                    <div class="fixed inset-0 bg-[black]/60 z-[999] hidden overflow-y-auto" :class="open && '!block'">
+                        <div class="flex items-start justify-center min-h-screen px-4" @click.self="open = false">
+                            <div x-transition x-transition.duration.300
+                                class="panel border-0 p-0 rounded-lg overflow-hidden my-8 w-full max-w-lg">
+                                <div class="heading">
+                                    <h2 class="m-0">Add Payment Type</h2>
+                                </div>
+                                <div class="p-5">
+                                    <form id="signupForm" class="needs-validation" novalidate="" method="POST"
+                                        action="{{ route('payment_method.store') }}">
+                                        @csrf
+
+                                        <div>
+                                            <label for="name">Name</label>
+                                            <input id="Name" type="text" placeholder="Product Name" name="Name"
+                                                class="form-input" required />
+                                        </div>
+                                        
+
+                                        <!-- Error message container -->
+                                        <div id="iconError" class="text-red-500 hidden" style="color: red;">
+                                            Please select a valid image for the icon (image format only).
+                                        </div>
+                                        <div>
+                                            <label class="flex items-center cursor-pointer">
+                                                <input type="checkbox" class="form-checkbox" name="Status"   checked />
+                                                <span class=" text-white-dark"">Active</span>
+                                                        </label>
+                                                    </div>
+                                                    <div class=" flex justify-end items-center mt-3">
+                                                    <button type="button" class="btn btn-outline-danger"
+                                                        @click="openModal = false">Discard</button>
+                                                    <button type="submit" class="btn btn-primary ltr:ml-4 rtl:mr-4"
+                                                        @click="addCategory">Create</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div x-show="editModal" class="mb-5">
+                    <!-- modal -->
+                    <div class="fixed inset-0 bg-[black]/60 z-[999] hidden overflow-y-auto" :class="open && '!block'">
+                        <div class="flex items-start justify-center min-h-screen px-4" @click.self="open = false">
+                            <div x-transition x-transition.duration.300
+                                class="panel border-0 p-0 rounded-lg overflow-hidden my-8 w-full max-w-lg">
+                                <div class="heading">
+                                    <h2 class="m-0">Edit Payment Type</h2>
+                                </div>
+                                <div class="p-5">
+                                    {{-- {!! Form::open(['url' => action('Rest\ProductCategoryController@update',
+                                    ['ID']),'class'=>'space-y-5', 'method' => 'post', 'id' => 'call_edit_form' ]) !!} --}}
+                                   
+                                    <form id="signupForm" class="needs-validation" novalidate="" method="POST"
+                                        action="{{ route('payment_method.update') }}">
+                                        @csrf
+                                        <input type="hidden" name="id" id="id" x-model="itemToEdit.id">
+            
+                                        <div>
+                                            <label for="name">Name</label>
+                                            <input id="Name" type="text" class="form-input" name="Name"
+                                                x-model="itemToEdit.name" required />
+                                        </div>
+
+                                        <!-- Error message container -->
+                                        <div id="iconError" class="text-red-500 hidden" style="color: red;">
+                                            Please select a valid image for the icon (image format only).
+                                        </div>
+                                        <div>
+                                            <label class="flex items-center cursor-pointer">
+                                                <input type="checkbox" class="form-checkbox" name="Status"
+                                                    x-model="itemToEdit.checked" />
+                                                <span class="text-white-dark">Active</span>
+                                            </label>
+                                        </div>
+                                        <div class=" flex justify-end items-center mt-3">
+                                            <button type="submit" class="btn btn-outline-danger"
+                                                @click="editModal = false">Discard</button>
+                                            <button type="submit" class="btn btn-primary ltr:ml-4 rtl:mr-4"
+                                                @click="editCategory">Update</button>
+                                        </div>
+                                    </form>
+                                    {{-- {!! Form::close() !!} --}}
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                <div x-show="viewModal" class="mb-5">
+                    <!-- modal -->
+                    <div class="fixed inset-0 bg-[black]/60 z-[999] hidden overflow-y-auto" :class="open && '!block'">
+                        <div class="flex items-start justify-center min-h-screen px-4" @click.self="open = false">
+                            <div x-transition x-transition.duration.300
+                                class="panel border-0 p-0 rounded-lg overflow-hidden my-8 w-full max-w-lg">
+                                <div class="heading">
+                                    <h2 class="m-0">View Payment Types</h2>
+                                </div>
+                                <div class="p-5">
+                                    <div class="row" style="display: flex; gap: 30px;">
+                                        <div class="left col-6">
+                                            <img style="width: 150px; height: 150px; object-fit: cover; border-radius: 5px;"
+                                                :src="viewItem.icon" />
+                                        </div>
+                                        <div class="right col-6"
+                                            style="display: flex; flex-direction: column; gap: 6px; width: 60%;">
+                                           
+                                            <h2 style="display: flex; flex-direction: column; font-size: 12px;">
+                                                Name : <span class="form-input" x-text="viewItem.name"></span></h2>
+                                           
+
+                                            <h2 style="padding-top: 10px;">Status :<span style="margin-left: 20px;"
+                                                    :class="viewItem.status === 'Active' ? 'badge badge-outline-success' : 'badge badge-outline-danger'"
+                                                    x-text="viewItem.status"></span></h2>
+                                        </div>
+                                    </div>
+                                    <div class=" flex justify-end items-center mt-3">
+                                        <button type="button" class="btn btn-outline-danger"
+                                            @click="viewModal = false">Close</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+
+            <div class="category-table">
+                <table id="myTable" class="whitespace-nowrap">
+                    <thead>
+                        <tr>
+                            <th>
+                                <input type="checkbox" class="form-checkbox" x-model="checkAllCheckbox"
+                                    @click="checkAll($event.target.checked)" :checked="checkAllCheckbox" />
+                            </th>
+                            <th>Name</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="(item, index) in paginatedFilteredItems" :key="item.id">
+                            <tr>
+                                <td>
+                                    <input type="checkbox" class="form-checkbox mt-1" :id="'chk' + item.id"
+                                        :value="item.id" x-model.number="selectedRows" />
+                                </td>
+                                
+                                <td>
+                                    <div class="flex items-center font-semibold">
+                                        <div class="p-0.5 bg-white-dark/30 rounded-full w-max ltr:mr-2 rtl:ml-2">
+                                            <img :src="item.icon" class="h-8 w-8 rounded-full object-cover" />
+                                        </div>
+                                        <span x-text="item.name"></span>
+                                    </div>
+                                </td>
+                               
+                               
+                                <td>
+                                    <span
+                                        :class="item.status === 'Active' ? 'badge badge-outline-success' : 'badge badge-outline-danger'"
+                                        x-text="item.status"></span>
+                                </td>
+                                <td>
+                                    <div class="flex gap-4 items-center">
+                                        <button class="hover:text-info" @click="editItem(item.id)">
+                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                                xmlns="http://www.w3.org/2000/svg" class="w-4.5 h-4.5">
+                                                <path opacity="0.5"
+                                                    d="M22 10.5V12C22 16.714 22 19.0711 20.5355 20.5355C19.0711 22 16.714 22 12 22C7.28595 22 4.92893 22 3.46447 20.5355C2 19.0711 2 16.714 2 12C2 7.28595 2 4.92893 3.46447 3.46447C4.92893 2 7.28595 2 12 2H13.5"
+                                                    stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                                                </path>
+                                                <path
+                                                    d="M17.3009 2.80624L16.652 3.45506L10.6872 9.41993C10.2832 9.82394 10.0812 10.0259 9.90743 10.2487C9.70249 10.5114 9.52679 10.7957 9.38344 11.0965C9.26191 11.3515 9.17157 11.6225 8.99089 12.1646L8.41242 13.9L8.03811 15.0229C7.9492 15.2897 8.01862 15.5837 8.21744 15.7826C8.41626 15.9814 8.71035 16.0508 8.97709 15.9619L10.1 15.5876L11.8354 15.0091C12.3775 14.8284 12.6485 14.7381 12.9035 14.6166C13.2043 14.4732 13.4886 14.2975 13.7513 14.0926C13.9741 13.9188 14.1761 13.7168 14.5801 13.3128L20.5449 7.34795L21.1938 6.69914C22.2687 5.62415 22.2687 3.88124 21.1938 2.80624C20.1188 1.73125 18.3759 1.73125 17.3009 2.80624Z"
+                                                    stroke="currentColor" stroke-width="1.5"></path>
+                                                <path opacity="0.5"
+                                                    d="M16.6522 3.45508C16.6522 3.45508 16.7333 4.83381 17.9499 6.05034C19.1664 7.26687 20.5451 7.34797 20.5451 7.34797M10.1002 15.5876L8.4126 13.9"
+                                                    stroke="currentColor" stroke-width="1.5"></path>
+                                            </svg>
+                                        </button>
+                                        <button class="hover:text-info" @click="showViewModal(item)">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+                <div class="pagination">
+                    <button style="margin-right: 20px;" @click="previousPage()" :disabled="currentPage === 1">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <template x-for="page in totalPages" :key="page">
+                        <button style="margin-right: 5px;" @click="changePage(page)"
+                            :class="{ 'active': currentPage === page }"><span x-text="page"></span></button>
+                    </template>
+                    <button style="margin-left: 20px;" @click="nextPage()" :disabled="currentPage === totalPages">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+</div>
+@endsection
+
+
+{{-- body content end--------------------------------- --}}
+
+
+
+{{-- script -------------------------------------- --}}
+
+<script>
+    document.addEventListener('alpine:init', () => {
+//Category list
+        Alpine.data('payment_method_list', () => ({
+            selectedRows: [],
+            items:  <?php echo $payment_method; ?>,
+            searchText: '',
+            openModal: false,
+            editModal: false,
+            viewModal: false,
+            viewItem: {},
+            itemToEdit: {},
+            pageSize: 5, // Number of items per page
+            currentPage: 1, // Current page number
+
+            showViewModal(item) {
+                this.viewItem = item; // Set the item to view
+                this.viewModal = true; // Show the view modal
+            },
+
+            get filteredItems() {
+                return this.items.filter(item => {
+                    return item.name.toLowerCase().includes(this.searchText.toLowerCase());
+                });
+            },
+
+            get paginatedFilteredItems() {
+                const filtered = this.filteredItems;
+                return filtered.slice(this.startIndex, this.endIndex);
+            },
+
+            get totalPages() {
+                return Math.ceil(this.items.length / this.pageSize);
+            },
+
+            get startIndex() {
+                return (this.currentPage - 1) * this.pageSize;
+            },
+
+            get endIndex() {
+                return this.currentPage * this.pageSize;
+            },
+
+            get paginatedItems() {
+                return this.items.slice(this.startIndex, this.endIndex);
+            },
+
+            changePage(pageNumber) {
+                this.currentPage = pageNumber;
+            },
+
+            previousPage() {
+                if (this.currentPage > 1) {
+                    this.currentPage--;
+                }
+            },
+
+            nextPage() {
+                if (this.currentPage < this.totalPages) {
+                    this.currentPage++;
+                }
+            },
+
+            handleIconChange(event) {
+                const file = event.target.files[0];
+
+                if (file) {
+                    const allowedFormats = ['image/jpeg', 'image/png', 'image/gif'];
+
+                    if (!allowedFormats.includes(file.type)) {
+                        document.getElementById('iconError').classList.remove('hidden');
+                        this.iconFile = null;
+                    } else {
+                        document.getElementById('iconError').classList.add('hidden');
+
+                        const reader = new FileReader();
+                        reader.readAsDataURL(file);
+                        reader.onload = () => {
+                            this.itemToEdit.icon = reader.result; // Update the icon with the new image data
+                        };
+                    }
+                }
+            },
+
+
+            // Save function
+
+            addCategory() {
+                const name = document.getElementById('Name').value;
+                const checkboxChecked = document.querySelector('input[type="checkbox"]').checked;
+                const iconInput = document.getElementById('Image');
+
+                if (!code || !name || !mainCategory || !iconInput.files[0]) {
+                    console.error('Please fill in all fields and select an icon image.');
+                    return;
+                }
+
+                const isValidImageType = (file) => {
+                    const allowedFormats = ['image/jpeg', 'image/png', 'image/gif'];
+                    return allowedFormats.includes(file.type);
+                };
+
+                const iconFile = iconInput.files[0];
+
+                if (!isValidImageType(iconFile)) {
+                    console.error('Please select a valid image for the icon (jpeg, png, gif).');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.readAsDataURL(iconFile);
+                reader.onload = () => {
+                    const newProduct = {
+                        id: this.items.length + 1,
+                        name: name,
+                        Image: reader.result, // Store the image as a data URL
+                        Status: checkboxChecked ? 'Active' : 'Not-Active',
+                        action: 1,
+                    };
+
+                    this.items.push(newProduct);
+
+                    // Close the modal after adding the product
+                    this.openModal = false;
+
+                    // Reset the form inputs
+                    document.getElementById('Name').value = '';
+                    document.getElementById('Image').value = '';
+                    document.querySelector('input[type="checkbox"]').checked = false;
+                };
+
+                reader.onerror = () => {
+                    console.error('Error reading the image file.');
+                };
+            },
+
+
+
+            editItem(itemId) {
+                const itemToEdit = this.items.find(item => item.id === itemId);
+                this.itemToEdit = { ...itemToEdit };
+                this.editModal = true;
+            },
+
+           
+
+
+            editCategory() {
+                    var data = $('form#call_edit_form').serialize();
+                    var id = $('form#call_edit_form').find('#edit-id').val();
+                    var url = $('form#call_edit_form').attr("action").replace('ID', id)
+                    $.ajax({
+                        method: "POST",
+                        url: url,
+                        dataType: "json",
+                        data: data,
+                        success: function (result) {
+                            if (result.success == true) {
+                                conso
+                                this.editModal = false;
+                                toastr.success(result.msg);
+                            } else {
+                                toastr.error(result.msg);
+                            }
+                        }
+                    });
+                },
+
+
+
+            checkAllCheckbox() {
+                if (this.items.length && this.selectedRows.length === this.items.length) {
+                    return true;
+                } else {
+                    return false;
+                }
+            },
+
+            checkAll(isChecked) {
+                if (isChecked) {
+                    this.selectedRows = this.items.map((d) => {
+                        return d.id;
+                    });
+                } else {
+                    this.selectedRows = [];
+                }
+            },
+
+            // delete
+            deleteRow(item) {
+                    if (confirm('Are you sure want to delete selected row ?')) {
+                            var href = $('.delete-button').attr('data-href');
+                            $.ajax({
+                                method: "GET",
+                                url: href,
+                                dataType: "json",
+                                data: {
+                                    ids :this.selectedRows
+                                },
+                                success: function (result) {
+                                    if (result.success == true) {
+                                        window.location.reload();
+
+                                    } else {
+                                        toastr.error(result.msg);
+                                    }
+                                }
+                            });
+                    }
+                },
+
+            deleteRow(item) {
+                if (confirm('Are you sure want to delete selected row ?')) {
+                    if (item) {
+                        this.items = this.items.filter((d) => d.id != item);
+                        this.selectedRows = [];
+                    } else {
+                        this.items = this.items.filter((d) => !this.selectedRows.includes(d.id));
+                        this.selectedRows = [];
+                    }
+                }
+            },
+        }));
+    });
+</script>

@@ -1,0 +1,438 @@
+@extends('layouts.app_rest')
+
+@section('content')
+<div class="animate__animated p-6 no-print" :class="[$store.app.animation]">
+            <!-- start main content section -->
+    <div>
+        <ul class="flex space-x-2 rtl:space-x-reverse">
+            <li>
+                <a href="{{action('Auth\LoginController@dashboard')}}" class="text-primary hover:underline">Dashboard</a>
+            </li>
+            <li class="before:content-['/'] ltr:before:mr-1 rtl:before:ml-1">
+                <span>Checkin</span>
+            </li>
+        </ul>
+        <div class="grid grid-cols-1 gap-4 pt-5">
+            <div x-data="sizeList">
+                <div class="panel border-[#e0e6ed] px-0 dark:border-[#1b2e4b]">
+                    <div class="px-5" x:data="sizeList">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div class="mb-5 flex items-center gap-2">
+                                @can('checkin.delete')
+                                    <button type="button" class="btn btn-danger gap-2 delete-button" @click="deleteRow()" data-href = "{{action('BookingController@destroy')}}">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                            xmlns="http://www.w3.org/2000/svg" class="h-5 w-5">
+                                            <path d="M20.5001 6H3.5" stroke="currentColor" stroke-width="1.5"
+                                                stroke-linecap="round"></path>
+                                            <path
+                                                d="M18.8334 8.5L18.3735 15.3991C18.1965 18.054 18.108 19.3815 17.243 20.1907C16.378 21 15.0476 21 12.3868 21H11.6134C8.9526 21 7.6222 21 6.75719 20.1907C5.89218 19.3815 5.80368 18.054 5.62669 15.3991L5.16675 8.5"
+                                                stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+                                            <path opacity="0.5" d="M9.5 11L10 16" stroke="currentColor"
+                                                stroke-width="1.5" stroke-linecap="round"></path>
+                                            <path opacity="0.5" d="M14.5 11L14 16" stroke="currentColor"
+                                                stroke-width="1.5" stroke-linecap="round"></path>
+                                            <path opacity="0.5"
+                                                d="M6.5 6C6.55588 6 6.58382 6 6.60915 5.99936C7.43259 5.97849 8.15902 5.45491 8.43922 4.68032C8.44784 4.65649 8.45667 4.62999 8.47434 4.57697L8.57143 4.28571C8.65431 4.03708 8.69575 3.91276 8.75071 3.8072C8.97001 3.38607 9.37574 3.09364 9.84461 3.01877C9.96213 3 10.0932 3 10.3553 3H13.6447C13.9068 3 14.0379 3 14.1554 3.01877C14.6243 3.09364 15.03 3.38607 15.2493 3.8072C15.3043 3.91276 15.3457 4.03708 15.4286 4.28571L15.5257 4.57697C15.5433 4.62992 15.5522 4.65651 15.5608 4.68032C15.841 5.45491 16.5674 5.97849 17.3909 5.99936C17.4162 6 17.4441 6 17.5 6"
+                                                stroke="currentColor" stroke-width="1.5"></path>
+                                        </svg>
+                                        Delete
+                                    </button>
+                                @endif
+                                @can('checkin.create')    
+                                    <a href="{{action('CheckinController@create')}}" class="btn btn-primary gap-2" @click="openModal = true">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                                            stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5">
+                                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                                        </svg>
+                                        Add New
+                                </a>
+                                @endcan
+                            </div>
+                            <input type="text" class="border rounded px-2 py-1 w-80" placeholder="Search..."
+                                style="outline: none;" x-model="searchText">
+                        </div>
+                        <div x-show="expenseModal" class="mb-5">
+                            <!-- modal -->
+                            <div class="fixed inset-0 bg-[black]/60 z-[999] hidden overflow-y-auto"
+                                :class="open && '!block'">
+                                <div class="flex items-start justify-center min-h-screen px-4"
+                                    @click.self="open = false">
+                                    <div x-transition x-transition.duration.300
+                                        class="panel border-0 p-0 rounded-lg overflow-hidden my-8 w-full max-w-lg">
+                                        <div class="heading">
+                                            <h2 class="m-0"><span x-text="itemToExpense.ref_no"></span> Expense</h2>
+                                        </div>
+                                        <div class="p-5">
+                                        {!! Form::open(['url' => action('CheckinController@postExpense', ['ID']), 'method' => 'post', 'id' => 'expense_add_form' ]) !!} 
+                                                
+                                                <input type="hidden" name="contact_id" x-model="itemToExpense.contact_id">
+                                                <input type="hidden" name="room_no" x-model="itemToExpense.room_no">
+                                                <div class="grid grid-cols-3 gap-4 pt-5">
+                                                    <div style="align-items: center; gap: 20px;">
+                                                        <div class="form-group">
+                                                            {!! Form::label('invoice_no', __('Reference No:').':') !!}
+                                                            {!! Form::text('invoice_no', isset($expense) && $expense->invoice_no ? $expense->invoice_no : '', ['class' => 'form-input']); !!}
+                                                        </div>
+                                                    </div>
+                                                    <div style="align-items: center; gap: 20px;">
+                                                        <div class="form-group">
+                                                            <label for="ctnSelect1">Date </label>
+                                                            <input id="basic" class="form-input" name="transaction_date" type="date" value="{{ date('Y-m-d') }}">
+                                                        </div>
+                                                    </div>
+                                                    <div style="align-items: center; gap: 20px;">
+                                                        <div class="form-group">
+                                                            <label for="ctnSelect1">Category</label>
+                                                            {!! Form::select('category_id', $categories , isset($expense) && $expense->category_id ? $expense->category_id : null, ['class' => 'form-input', 'id' => 'seachable-category',
+                                                            'placeholder' => __('Choose Category'), 'required']); !!}
+                                                        </div>
+                                                    </div>
+                                                    <div style="align-items: center; gap: 20px;">
+                                                        <div class="form-group">
+                                                            <label for="ctnSelect1">Sub Category</label>
+                                                            {!! Form::select('sub_category_id', [] , isset($expense) && $expense->sub_category_id ? $expense->sub_category_id : null, ['class' => 'form-input', 'id' => 'seachable-sub-cate',
+                                                            'placeholder' => __('Sub Category')]); !!}
+                                                        </div>
+                                                    </div>
+                                                    <div style="align-items: center; gap: 20px;">
+                                                        <div class="form-group">
+                                                            {!! Form::label('quantity', 'Qty *') !!}
+                                                            {!! Form::number('quantity', isset($expense) && $expense->quantity ? $expense->quantity : null, ['class' => 'form-input', 'id' => 'quantity' , 'required']); !!}
+                                                        </div>
+                                                    </div>
+                                                    <div style="align-items: center; gap: 20px;">
+                                                        <div class="form-group">
+                                                            {!! Form::label('final_total', 'Amount *') !!}
+                                                            {!! Form::number('final_total', isset($expense) && $expense->final_total ? $expense->final_total : null, ['class' => 'form-input', 'id' => 'final_amount' , 'required']); !!}
+                                                        </div>
+                                                    </div>
+                                                    <div style="align-items: center; gap: 20px;">
+                                                        <div class="form-group">
+                                                            {!! Form::label('details', 'Note') !!}
+                                                                    {!! Form::textarea('details', isset($expense) && $expense->details ? $expense->details : null, ['class' => 'form-input', 'rows' => 3, 'id' => 'details']); !!}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <input id="edit-id" type="hidden" x-model="itemToExpense.id">
+                                                <div class=" flex justify-end items-center mt-3">
+                                                    <button type="button" class="btn btn-outline-danger"
+                                                        @click="expenseModal = false">Discard</button>
+                                                        <button type="button" class="btn btn-primary ltr:ml-4 rtl:mr-4"
+                                                        @click="updateExpense">SAVE</button>
+                                                </div>
+                                            {!! Form::close() !!}
+
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div x-show="editModal" class="mb-5">
+                            <!-- modal -->
+                            <div class="fixed inset-0 bg-[black]/60 z-[999] hidden overflow-y-auto"
+                                :class="open && '!block'">
+                                <div class="flex items-start justify-center min-h-screen px-4"
+                                    @click.self="open = false">
+                                    <div x-transition x-transition.duration.300
+                                        class="panel border-0 p-0 rounded-lg overflow-hidden my-8 w-full max-w-lg">
+                                        <div class="heading">
+                                            <h2 class="m-0"><span x-text="itemToEdit.ref_no"></span> Canellation</h2>
+                                        </div>
+                                        <div class="p-5">
+                                            {!! Form::open(['url' => action('CancellationController@refund'), 'method' => 'post', 'id' => 'cancel_add_form' ]) !!}
+                                                
+                                                <input type="hidden" name="booking_id" x-model='itemToEdit.booking_id'>
+                                                <input type="hidden" name="transaction_id" x-model='itemToEdit.id'>
+                                                <div>
+                                                    {!! Form::label('amount', 'Amount') !!}
+                                                    {!! Form::number('amount', null, ['class' => 'form-input', 'id' => 'amount']); !!}
+                                                </div>
+                                                <div>
+                                                    {!! Form::label('note', 'Reason') !!}
+                                                    {!! Form::textarea('note', null, ['class' => 'form-input', 'rows' => 3, 'id' => 'details', 'required' => true]); !!}
+                                                </div>
+                                                <div class=" flex justify-end items-center mt-3">
+                                                    <button type="button" class="btn btn-outline-danger"
+                                                        @click="editModal = false">Discard</button>
+                                                        <button type="submit" class="btn btn-danger ltr:ml-4 rtl:mr-4"
+                                                        >CANCEL</button>
+                                                </div>
+                                            {!! Form::close() !!}
+
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @can('checkin.view')    
+                    <div class="category-table" style="min-height: .01%;
+                        overflow-x: auto;">
+                        <table id="myTable">
+                            <thead>
+                                <tr>
+                                    <th>
+                                        <input type="checkbox" class="form-checkbox" x-model="checkAllCheckbox"
+                                            @click="checkAll($event.target.checked)" :checked="checkAllCheckbox" />
+                                    </th>
+                                    
+                                    <th>Booking No</th>
+                                    <th>Rooms</th>
+                                    <th>Name</th>
+                                    <th>Check In</th>
+                                    <th>Check Out</th>
+                                    <th  class="whitespace-nowrap">Total Amount</th>
+                                    <th>Status</th>
+                                    <th>Payment Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="(item, index) in paginatedFilteredItems" :key="item.id">
+                                    <tr>
+                                        <td>
+                                            <input type="checkbox" class="form-checkbox mt-1" :id="'chk' + item.id"
+                                                :value="item.id" x-model.number="selectedRows" />
+                                        </td>
+                                        <td>
+                                            <span x-text="item.ref_no"></span>
+                                        </td>
+                                        <td>
+                                            <span x-text="item.room"></span>
+                                        </td>
+                                        <td>
+                                            <span x-text="item.name"></span>
+                                        </td>
+                                        <td>
+                                            <span x-text="item.check_in"></span>
+                                        </td>
+                                        <td>
+                                            <span x-text="item.check_out"></span>
+                                        </td> 
+                                        <td>
+                                            <span class="display_currency final_total" data-currency_symbol="true" x-text="item.total"></span>
+                                        </td> 
+                                        <td>
+                                            <span x-text="item.status"></span>
+                                        </td>
+                                        <td>
+                                        <span x-bind:class="item.color" x-text="item.payment_status"></span>
+                                        </td>
+                                         
+                                        <td>
+                                            <div class="flex gap-4 items-center">
+                                                <template x-if="item.new_status !== 'canceled'">
+                                                @can("checkin.update")
+                                                <a x-bind:href="item.edit_url" title="update">
+                                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                                        xmlns="http://www.w3.org/2000/svg" class="w-4.5 h-4.5">
+                                                        <path opacity="0.5"
+                                                            d="M22 10.5V12C22 16.714 22 19.0711 20.5355 20.5355C19.0711 22 16.714 22 12 22C7.28595 22 4.92893 22 3.46447 20.5355C2 19.0711 2 16.714 2 12C2 7.28595 2 4.92893 3.46447 3.46447C4.92893 2 7.28595 2 12 2H13.5"
+                                                            stroke="currentColor" stroke-width="1.5"
+                                                            stroke-linecap="round"></path>
+                                                        <path
+                                                            d="M17.3009 2.80624L16.652 3.45506L10.6872 9.41993C10.2832 9.82394 10.0812 10.0259 9.90743 10.2487C9.70249 10.5114 9.52679 10.7957 9.38344 11.0965C9.26191 11.3515 9.17157 11.6225 8.99089 12.1646L8.41242 13.9L8.03811 15.0229C7.9492 15.2897 8.01862 15.5837 8.21744 15.7826C8.41626 15.9814 8.71035 16.0508 8.97709 15.9619L10.1 15.5876L11.8354 15.0091C12.3775 14.8284 12.6485 14.7381 12.9035 14.6166C13.2043 14.4732 13.4886 14.2975 13.7513 14.0926C13.9741 13.9188 14.1761 13.7168 14.5801 13.3128L20.5449 7.34795L21.1938 6.69914C22.2687 5.62415 22.2687 3.88124 21.1938 2.80624C20.1188 1.73125 18.3759 1.73125 17.3009 2.80624Z"
+                                                            stroke="currentColor" stroke-width="1.5"></path>
+                                                        <path opacity="0.5"
+                                                            d="M16.6522 3.45508C16.6522 3.45508 16.7333 4.83381 17.9499 6.05034C19.1664 7.26687 20.5451 7.34797 20.5451 7.34797M10.1002 15.5876L8.4126 13.9"
+                                                            stroke="currentColor" stroke-width="1.5"></path>
+                                                    </svg>
+                                                </a>
+                                                @endcan
+                                                </template>
+                                                <template x-if="item.new_status !== 'canceled'">
+                                                    @can("checkin.checkin")
+                                                        <a x-bind:href="item.checkin_url" title="checkout"><i class="fa fa-thumbs-o-up"></i></a>
+                                                    @endcan
+                                                </template>
+                                                <template x-if="item.new_status !== 'canceled'">
+                                                    @can("checkin.update")
+                                                    <a x-bind:href="item.ex_url" title="room changes"><i class="fa fa-exchange"></i></a>
+                                                    @endcan
+                                                </template>
+                                                <a x-bind:href="item.show_url">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <template x-if="item.new_status !== 'canceled'">
+                                                    @can("checkin.update")
+                                                        <button class="hover:text-info" @click="editItem(item.id)" title="cancel">
+                                                            <i class="fa fa-window-close-o"></i>
+                                                        </button>
+                                                    @endcan
+                                                </template>
+                                                <template x-if="item.new_status !== 'canceled'">
+                                                    @can("checkin.expense")
+                                                        <button class="hover:text-info" @click="addExpense(item.id)" title="cancel">
+                                                            <i class="fa fa-money"></i>
+                                                        </button>
+                                                    @endcan
+                                                </template>
+                                                <a href="#" class="print-invoice" x-bind:data-href="item.print_url"><i class="fa fa-print" aria-hidden="true"></i></a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                        <div class="pagination">
+                            <button style="margin-right: 20px;" @click="previousPage()"
+                                :disabled="currentPage === 1">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <template x-for="page in totalPages" :key="page">
+                                <button style="margin-right: 5px;" @click="changePage(page)"
+                                    :class="{ 'active': currentPage === page }"><span x-text="page"></span></button>
+                            </template>
+                            <button style="margin-left: 20px;" @click="nextPage()"
+                                :disabled="currentPage === totalPages">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+
+                    </div>
+                    @endcan
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<section class="invoice print_section" id="receipt_section">
+</section>
+@endsection
+@section('javascript')
+<script type="text/javascript">
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('sizeList', () => ({
+            selectedRows: [],
+            items:  <?php echo $transactions; ?>,
+            searchText: '',
+            openModal: false,
+            editModal: false,
+            expenseModal: false,
+            viewModal: false,
+            viewItem: {},
+            itemToEdit: {},
+            itemToExpense: {},
+            pageSize: 10, // Number of items per page
+            currentPage: 1, // Current page number
+
+            showViewModal(item) {
+                this.viewItem = item; // Set the item to view
+                this.viewModal = true; // Show the view modal
+            },
+
+            get filteredItems() {
+                return this.items.filter(item => {
+                    return item.name.toLowerCase().includes(this.searchText.toLowerCase());
+                });
+            },
+
+            get paginatedFilteredItems() {
+                const filtered = this.filteredItems;
+                return filtered.slice(this.startIndex, this.endIndex);
+            },
+
+            get totalPages() {
+                return Math.ceil(this.items.length / this.pageSize);
+            },
+
+            get startIndex() {
+                return (this.currentPage - 1) * this.pageSize;
+            },
+
+            get endIndex() {
+                return this.currentPage * this.pageSize;
+            },
+
+            get paginatedItems() {
+                return this.items.slice(this.startIndex, this.endIndex);
+            },
+
+            changePage(pageNumber) {
+                this.currentPage = pageNumber;
+            },
+
+            previousPage() {
+                if (this.currentPage > 1) {
+                    this.currentPage--;
+                }
+            },
+
+            nextPage() {
+                if (this.currentPage < this.totalPages) {
+                    this.currentPage++;
+                }
+            },
+            checkAllCheckbox() {
+                if (this.items.length && this.selectedRows.length === this.items.length) {
+                    return true;
+                } else {
+                    return false;
+                }
+            },
+
+            checkAll(isChecked) {
+                if (isChecked) {
+                    this.selectedRows = this.items.map((d) => {
+                        return d.id;
+                    });
+                } else {
+                    this.selectedRows = [];
+                }
+            },
+            editItem(itemId) {
+                const itemToEdit = this.items.find(item => item.id === itemId);
+                this.itemToEdit = { ...itemToEdit };
+                this.editModal = true;
+            },
+            addExpense(itemId) {
+                const itemToExpense = this.items.find(item => item.id === itemId);
+                this.itemToExpense = { ...itemToExpense };
+                this.expenseModal = true;
+            },
+            updateExpense() {
+                var data = $('form#expense_add_form').serialize();
+                var id = $('form#expense_add_form').find('#edit-id').val();
+                var url = $('form#expense_add_form').attr("action").replace('ID', id)
+                $.ajax({
+                    method: "POST",
+                    url: url,
+                    dataType: "json",
+                    data: data,
+                    success: function (result) {
+                        if (result.success == true) {
+                            window.location.reload();
+                        } else {
+                            toastr.error(result.msg);
+                        }
+                    }
+                });
+            },
+            deleteRow(item) {
+                if (confirm('Are you sure want to delete selected row ?')) {
+                        var href = $('.delete-button').attr('data-href');
+                        $.ajax({
+                            method: "GET",
+                            url: href,
+                            dataType: "json",
+                            data: {
+                                ids :this.selectedRows
+                            },
+                            success: function (result) {
+                                if (result.success == true) {
+                                    window.location.reload();
+
+                                } else {
+                                    toastr.error(result.msg);
+                                }
+                            }
+                        });
+                }
+            },
+        }));
+    });
+</script>
+@endsection
